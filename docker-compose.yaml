@@ -5,6 +5,10 @@ services:
     build: .
     expose:
       - "8080"
+    labels:
+      - "coolify.managed=true"
+      - "coolify.type=application"
+      - "coolify.name=app"
     environment:
       - APP_ENV=${APP_ENV:-production}
       - APP_NAME=${APP_NAME:-yt-analytics}
