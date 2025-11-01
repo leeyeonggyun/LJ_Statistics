@@ -9,6 +9,12 @@ services:
       - "coolify.managed=true"
       - "coolify.type=application"
       - "coolify.name=app"
+      - "traefik.enable=true"
+      - "traefik.http.routers.app.rule=Host(`qc00wk80wwgggk44s44kcg8s.a2z4next.com`)"
+      - "traefik.http.routers.app.entrypoints=websecure"
+      - "traefik.http.routers.app.tls=true"
+      - "traefik.http.routers.app.tls.certresolver=letsencrypt"
+      - "traefik.http.services.app.loadbalancer.server.port=8080"
     environment:
       - APP_ENV=${APP_ENV:-production}
       - APP_NAME=${APP_NAME:-yt-analytics}
