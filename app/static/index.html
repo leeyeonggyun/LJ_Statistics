@@ -1,0 +1,744 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>유튜브 채널 검색</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            color: white;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .search-box {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin-bottom: 20px;
+        }
+
+        .search-form {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .search-input {
+            flex: 1;
+            min-width: 250px;
+            padding: 15px 20px;
+            font-size: 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        .search-input:focus {
+            border-color: #667eea;
+        }
+
+        .search-button {
+            padding: 15px 40px;
+            font-size: 16px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            font-weight: bold;
+        }
+
+        .search-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .search-button:active {
+            transform: translateY(0);
+        }
+
+        .search-button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .filters-box {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .filters-box.active {
+            display: block;
+        }
+
+        .filter-section {
+            margin-bottom: 20px;
+        }
+
+        .filter-section:last-child {
+            margin-bottom: 0;
+        }
+
+        .filter-label {
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #333;
+            display: block;
+        }
+
+        .filter-options {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .filter-option {
+            padding: 8px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: white;
+            font-size: 14px;
+        }
+
+        .filter-option:hover {
+            border-color: #667eea;
+            background: #f5f5f5;
+        }
+
+        .filter-option.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-color: #667eea;
+        }
+
+        .country-select {
+            padding: 10px 35px 10px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 14px;
+            outline: none;
+            cursor: pointer;
+            min-width: 200px;
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            background-size: 16px;
+        }
+
+        .country-select:focus {
+            border-color: #667eea;
+        }
+
+        .loading {
+            text-align: center;
+            color: white;
+            font-size: 1.2em;
+            margin: 20px 0;
+        }
+
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+
+        .loading-overlay.active {
+            display: flex;
+        }
+
+        .loading-content {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            text-align: center;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+        }
+
+        .spinner {
+            width: 60px;
+            height: 60px;
+            margin: 0 auto 20px;
+            border: 6px solid #f3f3f3;
+            border-top: 6px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .loading-text {
+            font-size: 1.3em;
+            color: #333;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+
+        .loading-subtext {
+            font-size: 0.9em;
+            color: #666;
+            line-height: 1.5;
+        }
+
+        .results-info {
+            color: white;
+            margin-bottom: 20px;
+            font-size: 1.1em;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .channel-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+            gap: 20px;
+        }
+
+        .channel-card {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            transition: transform 0.3s, box-shadow 0.3s;
+            cursor: pointer;
+        }
+
+        .channel-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+        }
+
+        .channel-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .channel-thumbnail {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+
+        .channel-title {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #333;
+            flex: 1;
+            word-break: break-word;
+        }
+
+        .channel-meta {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+        }
+
+        .meta-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 4px 10px;
+            background: #f0f0f0;
+            border-radius: 12px;
+            font-size: 0.75em;
+            color: #666;
+        }
+
+        .meta-badge.country {
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+
+        .meta-badge.topic {
+            background: #f3e5f5;
+            color: #7b1fa2;
+        }
+
+        .channel-description {
+            color: #666;
+            font-size: 0.9em;
+            margin-bottom: 15px;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            line-height: 1.5;
+            min-height: 4.05em;
+        }
+
+        .channel-dates {
+            font-size: 0.85em;
+            color: #999;
+            margin-bottom: 15px;
+            padding: 10px;
+            background: #f9f9f9;
+            border-radius: 8px;
+        }
+
+        .date-item {
+            margin-bottom: 5px;
+        }
+
+        .date-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .date-label {
+            font-weight: 600;
+            color: #666;
+        }
+
+        .channel-stats {
+            display: flex;
+            justify-content: space-between;
+            padding-top: 15px;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        .stat {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1.1em;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .stat-label {
+            font-size: 0.8em;
+            color: #999;
+            margin-top: 5px;
+        }
+
+        .error {
+            background: #ff5252;
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 1.8em;
+            }
+
+            .channel-list {
+                grid-template-columns: 1fr;
+            }
+
+            .search-form {
+                flex-direction: column;
+            }
+
+            .search-button {
+                width: 100%;
+            }
+
+            .results-info {
+                flex-direction: column;
+                gap: 10px;
+                align-items: flex-start;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>유튜브 채널 검색</h1>
+
+        <div class="search-box">
+            <form class="search-form" id="searchForm">
+                <input
+                    type="text"
+                    id="searchInput"
+                    class="search-input"
+                    placeholder="채널을 검색하세요..."
+                    required
+                    autofocus
+                >
+                <button type="submit" class="search-button" id="searchButton">
+                    검색
+                </button>
+            </form>
+        </div>
+
+        <div class="filters-box" id="filtersBox">
+            <div class="filter-section">
+                <label class="filter-label">구독자 수</label>
+                <div class="filter-options" id="subscriberFilters">
+                    <div class="filter-option active" data-range="all">전체</div>
+                    <div class="filter-option" data-range="1m+">100만 이상</div>
+                    <div class="filter-option" data-range="100k-1m">10만 ~ 100만</div>
+                    <div class="filter-option" data-range="10k-100k">1만 ~ 10만</div>
+                    <div class="filter-option" data-range="1k-10k">1천 ~ 1만</div>
+                    <div class="filter-option" data-range="0-1k">1천 미만</div>
+                </div>
+            </div>
+
+            <div class="filter-section">
+                <label class="filter-label">국가</label>
+                <select class="country-select" id="countryFilter">
+                    <option value="">전체 국가</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="loading-overlay" id="loadingOverlay">
+            <div class="loading-content">
+                <div class="spinner"></div>
+                <div class="loading-text">채널 검색 중...</div>
+                <div class="loading-subtext">채널 검색 + 비디오 검색 + 주제 분석으로 관련 채널을 찾고 있습니다<br>전체 콘텐츠 대비 관련성이 높은 채널만 표시합니다</div>
+            </div>
+        </div>
+
+        <div id="loading" class="loading" style="display: none;">
+            채널 검색 중...
+        </div>
+
+        <div id="error" class="error" style="display: none;"></div>
+
+        <div id="resultsInfo" class="results-info" style="display: none;">
+            <span id="resultsText"></span>
+            <span id="filteredCount"></span>
+        </div>
+
+        <div id="channelList" class="channel-list"></div>
+    </div>
+
+    <script>
+        const searchForm = document.getElementById('searchForm');
+        const searchInput = document.getElementById('searchInput');
+        const searchButton = document.getElementById('searchButton');
+        const loading = document.getElementById('loading');
+        const loadingOverlay = document.getElementById('loadingOverlay');
+        const error = document.getElementById('error');
+        const resultsInfo = document.getElementById('resultsInfo');
+        const resultsText = document.getElementById('resultsText');
+        const filteredCount = document.getElementById('filteredCount');
+        const channelList = document.getElementById('channelList');
+        const filtersBox = document.getElementById('filtersBox');
+        const subscriberFilters = document.getElementById('subscriberFilters');
+        const countryFilter = document.getElementById('countryFilter');
+
+        let allChannels = [];
+        let currentSubscriberRange = 'all';
+        let currentCountry = '';
+
+        // Country codes mapping
+        const countryNames = {
+            'KR': '대한민국',
+            'US': '미국',
+            'JP': '일본',
+            'GB': '영국',
+            'CN': '중국',
+            'TW': '대만',
+            'HK': '홍콩',
+            'SG': '싱가포르',
+            'TH': '태국',
+            'VN': '베트남',
+            'ID': '인도네시아',
+            'MY': '말레이시아',
+            'PH': '필리핀',
+            'IN': '인도',
+            'AU': '호주',
+            'CA': '캐나다',
+            'DE': '독일',
+            'FR': '프랑스',
+            'ES': '스페인',
+            'IT': '이탈리아',
+            'BR': '브라질',
+            'MX': '멕시코',
+            'RU': '러시아',
+        };
+
+        function formatNumber(num) {
+            if (num >= 1000000) {
+                return (num / 1000000).toFixed(1) + 'M';
+            } else if (num >= 1000) {
+                return (num / 1000).toFixed(1) + 'K';
+            }
+            return num.toString();
+        }
+
+        function formatDate(dateString) {
+            if (!dateString) return '정보 없음';
+            const date = new Date(dateString);
+            const now = new Date();
+            const diffTime = Math.abs(now - date);
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+            if (diffDays < 1) {
+                return '오늘';
+            } else if (diffDays < 7) {
+                return `${diffDays}일 전`;
+            } else if (diffDays < 30) {
+                return `${Math.floor(diffDays / 7)}주 전`;
+            } else if (diffDays < 365) {
+                return `${Math.floor(diffDays / 30)}개월 전`;
+            } else {
+                return `${Math.floor(diffDays / 365)}년 전`;
+            }
+        }
+
+        function formatDateFull(dateString) {
+            if (!dateString) return '정보 없음';
+            const date = new Date(dateString);
+            return date.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' });
+        }
+
+        function getCountryName(code) {
+            return countryNames[code] || code;
+        }
+
+        function filterChannels() {
+            let filtered = allChannels;
+
+            // Filter by subscriber range
+            if (currentSubscriberRange !== 'all') {
+                filtered = filtered.filter(channel => {
+                    const subs = channel.subscriberCount;
+                    switch (currentSubscriberRange) {
+                        case '1m+': return subs >= 1000000;
+                        case '100k-1m': return subs >= 100000 && subs < 1000000;
+                        case '10k-100k': return subs >= 10000 && subs < 100000;
+                        case '1k-10k': return subs >= 1000 && subs < 10000;
+                        case '0-1k': return subs < 1000;
+                        default: return true;
+                    }
+                });
+            }
+
+            // Filter by country
+            if (currentCountry) {
+                filtered = filtered.filter(channel => channel.country === currentCountry);
+            }
+
+            displayChannels(filtered);
+            updateFilteredCount(filtered.length);
+        }
+
+        function updateFilteredCount(count) {
+            if (count !== allChannels.length) {
+                filteredCount.textContent = `(필터링: ${count}개)`;
+            } else {
+                filteredCount.textContent = '';
+            }
+        }
+
+        function createChannelCard(channel) {
+            const card = document.createElement('div');
+            card.className = 'channel-card';
+            card.onclick = () => {
+                const channelUrl = `https://www.youtube.com/channel/${channel.channelId}`;
+                window.open(channelUrl, '_blank');
+            };
+
+            const metaBadges = [];
+            if (channel.country) {
+                metaBadges.push(`<span class="meta-badge country">${getCountryName(channel.country)}</span>`);
+            }
+
+            // Add topic badges (max 3)
+            if (channel.topics && channel.topics.length > 0) {
+                const topicsToShow = channel.topics.slice(0, 3);
+                topicsToShow.forEach(topic => {
+                    metaBadges.push(`<span class="meta-badge topic">${topic}</span>`);
+                });
+            }
+
+            card.innerHTML = `
+                <div class="channel-header">
+                    <img src="${channel.thumbnailUrl}" alt="${channel.title}" class="channel-thumbnail">
+                    <div class="channel-title">${channel.title}</div>
+                </div>
+                ${metaBadges.length > 0 ? `<div class="channel-meta">${metaBadges.join('')}</div>` : ''}
+                <div class="channel-description">${channel.description || '설명 없음'}</div>
+                <div class="channel-dates">
+                    <div class="date-item">
+                        <span class="date-label">채널 생성:</span> ${formatDateFull(channel.publishedAt)}
+                    </div>
+                    <div class="date-item">
+                        <span class="date-label">최근 업로드:</span> ${channel.latestUploadDate ? formatDate(channel.latestUploadDate) : '정보 없음'}
+                    </div>
+                </div>
+                <div class="channel-stats">
+                    <div class="stat">
+                        <div class="stat-value">${formatNumber(channel.subscriberCount)}</div>
+                        <div class="stat-label">구독자</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-value">${formatNumber(channel.videoCount)}</div>
+                        <div class="stat-label">동영상</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-value">${formatNumber(channel.viewCount)}</div>
+                        <div class="stat-label">조회수</div>
+                    </div>
+                </div>
+            `;
+
+            return card;
+        }
+
+        function displayChannels(channels) {
+            channelList.innerHTML = '';
+            channels.forEach(channel => {
+                const card = createChannelCard(channel);
+                channelList.appendChild(card);
+            });
+        }
+
+        function populateCountryFilter(channels) {
+            const countries = new Set();
+            channels.forEach(channel => {
+                if (channel.country) {
+                    countries.add(channel.country);
+                }
+            });
+
+            // Sort countries
+            const sortedCountries = Array.from(countries).sort((a, b) => {
+                return getCountryName(a).localeCompare(getCountryName(b), 'ko');
+            });
+
+            // Clear existing options except "All"
+            countryFilter.innerHTML = '<option value="">전체 국가</option>';
+
+            // Add country options
+            sortedCountries.forEach(code => {
+                const option = document.createElement('option');
+                option.value = code;
+                option.textContent = getCountryName(code);
+                countryFilter.appendChild(option);
+            });
+        }
+
+        async function searchChannels(query) {
+            loadingOverlay.classList.add('active');
+            error.style.display = 'none';
+            resultsInfo.style.display = 'none';
+            channelList.innerHTML = '';
+            filtersBox.classList.remove('active');
+            searchButton.disabled = true;
+
+            try {
+                const response = await fetch(`/api/search/channels?q=${encodeURIComponent(query)}&max_results=150`);
+
+                if (!response.ok) {
+                    throw new Error('채널을 가져오는데 실패했습니다');
+                }
+
+                const data = await response.json();
+
+                loadingOverlay.classList.remove('active');
+                searchButton.disabled = false;
+
+                if (data.channels && data.channels.length > 0) {
+                    allChannels = data.channels;
+                    resultsInfo.style.display = 'flex';
+                    resultsText.textContent = `"${data.query}"에 대한 ${data.result_count}개의 채널을 찾았습니다`;
+                    filtersBox.classList.add('active');
+
+                    populateCountryFilter(allChannels);
+                    displayChannels(allChannels);
+                } else {
+                    resultsInfo.style.display = 'flex';
+                    resultsText.textContent = `"${data.query}"에 대한 채널을 찾을 수 없습니다`;
+                }
+            } catch (err) {
+                loadingOverlay.classList.remove('active');
+                searchButton.disabled = false;
+                error.style.display = 'block';
+                error.textContent = '오류: ' + err.message;
+            }
+        }
+
+        // Event listeners
+        searchForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const query = searchInput.value.trim();
+            if (query) {
+                currentSubscriberRange = 'all';
+                currentCountry = '';
+
+                // Reset filters
+                subscriberFilters.querySelectorAll('.filter-option').forEach(opt => {
+                    opt.classList.remove('active');
+                    if (opt.dataset.range === 'all') {
+                        opt.classList.add('active');
+                    }
+                });
+                countryFilter.value = '';
+
+                searchChannels(query);
+            }
+        });
+
+        subscriberFilters.addEventListener('click', (e) => {
+            if (e.target.classList.contains('filter-option')) {
+                subscriberFilters.querySelectorAll('.filter-option').forEach(opt => {
+                    opt.classList.remove('active');
+                });
+                e.target.classList.add('active');
+                currentSubscriberRange = e.target.dataset.range;
+                filterChannels();
+            }
+        });
+
+        countryFilter.addEventListener('change', (e) => {
+            currentCountry = e.target.value;
+            filterChannels();
+        });
+    </script>
+</body>
+</html>
