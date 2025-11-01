@@ -12,8 +12,10 @@ config = context.config
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-# Read URL from env or alembic.ini
-target_metadata = None  # set your metadata here if using SQLAlchemy models
+from app.core.database import Base
+from app.models import TopChannel
+
+target_metadata = Base.metadata
 
 def get_url():
     return os.getenv("DATABASE_URL", config.get_main_option("sqlalchemy.url"))

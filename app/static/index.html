@@ -31,6 +31,44 @@
             text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
         }
 
+        /* Tab Navigation */
+        .tab-navigation {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            justify-content: center;
+        }
+
+        .tab-button {
+            padding: 15px 30px;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 2px solid transparent;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 1.1em;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+
+        .tab-button:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .tab-button.active {
+            background: white;
+            color: #667eea;
+            border-color: white;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
         .search-box {
             background: white;
             padding: 30px;
@@ -301,6 +339,12 @@
             color: #7b1fa2;
         }
 
+        .meta-badge.rank {
+            background: #fff3e0;
+            color: #e65100;
+            font-weight: bold;
+        }
+
         .channel-description {
             color: #666;
             font-size: 0.9em;
@@ -367,6 +411,44 @@
             text-align: center;
         }
 
+        /* Top Channels Specific Styles */
+        .country-section {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin-bottom: 30px;
+        }
+
+        .country-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        .country-flag {
+            font-size: 2.5em;
+        }
+
+        .country-name {
+            font-size: 1.8em;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .update-info {
+            color: white;
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 0.95em;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 10px 20px;
+            border-radius: 10px;
+        }
+
         @media (max-width: 768px) {
             h1 {
                 font-size: 1.8em;
@@ -389,6 +471,15 @@
                 gap: 10px;
                 align-items: flex-start;
             }
+
+            .tab-navigation {
+                flex-direction: column;
+            }
+
+            .tab-button {
+                width: 100%;
+                text-align: center;
+            }
         }
     </style>
 </head>
@@ -396,72 +487,113 @@
     <div class="container">
         <h1>유튜브 채널 검색</h1>
 
-        <div class="search-box">
-            <form class="search-form" id="searchForm">
-                <input
-                    type="text"
-                    id="searchInput"
-                    class="search-input"
-                    placeholder="채널을 검색하세요..."
-                    required
-                    autofocus
-                >
-                <button type="submit" class="search-button" id="searchButton">
-                    검색
-                </button>
-            </form>
+        <!-- Tab Navigation -->
+        <div class="tab-navigation">
+            <button class="tab-button active" data-tab="search">검색</button>
+            <button class="tab-button" data-tab="rankings">국가별 순위</button>
         </div>
 
-        <div class="filters-box" id="filtersBox">
-            <div class="filter-section">
-                <label class="filter-label">구독자 수</label>
-                <div class="filter-options" id="subscriberFilters">
-                    <div class="filter-option active" data-range="all">전체</div>
-                    <div class="filter-option" data-range="1m+">100만 이상</div>
-                    <div class="filter-option" data-range="100k-1m">10만 ~ 100만</div>
-                    <div class="filter-option" data-range="10k-100k">1만 ~ 10만</div>
-                    <div class="filter-option" data-range="1k-10k">1천 ~ 1만</div>
-                    <div class="filter-option" data-range="0-1k">1천 미만</div>
+        <!-- Search Tab Content -->
+        <div id="searchTab" class="tab-content active">
+            <div class="search-box">
+                <form class="search-form" id="searchForm">
+                    <input
+                        type="text"
+                        id="searchInput"
+                        class="search-input"
+                        placeholder="채널을 검색하세요..."
+                        required
+                        autofocus
+                    >
+                    <button type="submit" class="search-button" id="searchButton">
+                        검색
+                    </button>
+                </form>
+            </div>
+
+            <div class="filters-box" id="filtersBox">
+                <div class="filter-section">
+                    <label class="filter-label">구독자 수</label>
+                    <div class="filter-options" id="subscriberFilters">
+                        <div class="filter-option active" data-range="all">전체</div>
+                        <div class="filter-option" data-range="1m+">100만 이상</div>
+                        <div class="filter-option" data-range="100k-1m">10만 ~ 100만</div>
+                        <div class="filter-option" data-range="10k-100k">1만 ~ 10만</div>
+                        <div class="filter-option" data-range="1k-10k">1천 ~ 1만</div>
+                        <div class="filter-option" data-range="0-1k">1천 미만</div>
+                    </div>
+                </div>
+
+                <div class="filter-section">
+                    <label class="filter-label">국가</label>
+                    <select class="country-select" id="countryFilter">
+                        <option value="">전체 국가</option>
+                    </select>
                 </div>
             </div>
 
-            <div class="filter-section">
-                <label class="filter-label">국가</label>
-                <select class="country-select" id="countryFilter">
-                    <option value="">전체 국가</option>
-                </select>
+            <div id="searchError" class="error" style="display: none;"></div>
+
+            <div id="resultsInfo" class="results-info" style="display: none;">
+                <span id="resultsText"></span>
+                <span id="filteredCount"></span>
             </div>
+
+            <div id="channelList" class="channel-list"></div>
+        </div>
+
+        <!-- Rankings Tab Content -->
+        <div id="rankingsTab" class="tab-content">
+            <div class="update-info" id="updateInfo">
+                데이터는 매일 오전 3시에 자동 업데이트됩니다
+            </div>
+
+            <div id="rankingsError" class="error" style="display: none;"></div>
+
+            <div id="rankingsContent"></div>
         </div>
 
         <div class="loading-overlay" id="loadingOverlay">
             <div class="loading-content">
                 <div class="spinner"></div>
-                <div class="loading-text">채널 검색 중...</div>
-                <div class="loading-subtext">채널 검색 + 비디오 검색 + 주제 분석으로 관련 채널을 찾고 있습니다<br>전체 콘텐츠 대비 관련성이 높은 채널만 표시합니다</div>
+                <div class="loading-text" id="loadingText">채널 검색 중...</div>
+                <div class="loading-subtext" id="loadingSubtext">채널 검색 + 비디오 검색 + 주제 분석으로 관련 채널을 찾고 있습니다<br>전체 콘텐츠 대비 관련성이 높은 채널만 표시합니다</div>
             </div>
         </div>
-
-        <div id="loading" class="loading" style="display: none;">
-            채널 검색 중...
-        </div>
-
-        <div id="error" class="error" style="display: none;"></div>
-
-        <div id="resultsInfo" class="results-info" style="display: none;">
-            <span id="resultsText"></span>
-            <span id="filteredCount"></span>
-        </div>
-
-        <div id="channelList" class="channel-list"></div>
     </div>
 
     <script>
+        // Tab switching
+        const tabButtons = document.querySelectorAll('.tab-button');
+        const tabContents = document.querySelectorAll('.tab-content');
+
+        tabButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                const tabName = button.dataset.tab;
+
+                // Remove active class from all tabs
+                tabButtons.forEach(btn => btn.classList.remove('active'));
+                tabContents.forEach(content => content.classList.remove('active'));
+
+                // Add active class to clicked tab
+                button.classList.add('active');
+                document.getElementById(`${tabName}Tab`).classList.add('active');
+
+                // Load rankings if switching to rankings tab
+                if (tabName === 'rankings' && !rankingsLoaded) {
+                    loadTopChannels();
+                }
+            });
+        });
+
         const searchForm = document.getElementById('searchForm');
         const searchInput = document.getElementById('searchInput');
         const searchButton = document.getElementById('searchButton');
-        const loading = document.getElementById('loading');
         const loadingOverlay = document.getElementById('loadingOverlay');
-        const error = document.getElementById('error');
+        const loadingText = document.getElementById('loadingText');
+        const loadingSubtext = document.getElementById('loadingSubtext');
+        const searchError = document.getElementById('searchError');
+        const rankingsError = document.getElementById('rankingsError');
         const resultsInfo = document.getElementById('resultsInfo');
         const resultsText = document.getElementById('resultsText');
         const filteredCount = document.getElementById('filteredCount');
@@ -469,10 +601,12 @@
         const filtersBox = document.getElementById('filtersBox');
         const subscriberFilters = document.getElementById('subscriberFilters');
         const countryFilter = document.getElementById('countryFilter');
+        const rankingsContent = document.getElementById('rankingsContent');
 
         let allChannels = [];
         let currentSubscriberRange = 'all';
         let currentCountry = '';
+        let rankingsLoaded = false;
 
         // Country codes mapping
         const countryNames = {
@@ -499,6 +633,12 @@
             'BR': '브라질',
             'MX': '멕시코',
             'RU': '러시아',
+        };
+
+        const countryFlags = {
+            'KR': '🇰🇷',
+            'JP': '🇯🇵',
+            'US': '🇺🇸',
         };
 
         function formatNumber(num) {
@@ -563,7 +703,7 @@
                 filtered = filtered.filter(channel => channel.country === currentCountry);
             }
 
-            displayChannels(filtered);
+            displayChannels(filtered, channelList);
             updateFilteredCount(filtered.length);
         }
 
@@ -575,7 +715,7 @@
             }
         }
 
-        function createChannelCard(channel) {
+        function createChannelCard(channel, showRank = false) {
             const card = document.createElement('div');
             card.className = 'channel-card';
             card.onclick = () => {
@@ -584,6 +724,9 @@
             };
 
             const metaBadges = [];
+            if (showRank && channel.rank) {
+                metaBadges.push(`<span class="meta-badge rank">#${channel.rank}</span>`);
+            }
             if (channel.country) {
                 metaBadges.push(`<span class="meta-badge country">${getCountryName(channel.country)}</span>`);
             }
@@ -596,6 +739,17 @@
                 });
             }
 
+            const datesHtml = channel.publishedAt || channel.latestUploadDate ? `
+                <div class="channel-dates">
+                    ${channel.publishedAt ? `<div class="date-item">
+                        <span class="date-label">채널 생성:</span> ${formatDateFull(channel.publishedAt)}
+                    </div>` : ''}
+                    ${channel.latestUploadDate ? `<div class="date-item">
+                        <span class="date-label">최근 업로드:</span> ${formatDate(channel.latestUploadDate)}
+                    </div>` : ''}
+                </div>
+            ` : '';
+
             card.innerHTML = `
                 <div class="channel-header">
                     <img src="${channel.thumbnailUrl}" alt="${channel.title}" class="channel-thumbnail">
@@ -603,14 +757,7 @@
                 </div>
                 ${metaBadges.length > 0 ? `<div class="channel-meta">${metaBadges.join('')}</div>` : ''}
                 <div class="channel-description">${channel.description || '설명 없음'}</div>
-                <div class="channel-dates">
-                    <div class="date-item">
-                        <span class="date-label">채널 생성:</span> ${formatDateFull(channel.publishedAt)}
-                    </div>
-                    <div class="date-item">
-                        <span class="date-label">최근 업로드:</span> ${channel.latestUploadDate ? formatDate(channel.latestUploadDate) : '정보 없음'}
-                    </div>
-                </div>
+                ${datesHtml}
                 <div class="channel-stats">
                     <div class="stat">
                         <div class="stat-value">${formatNumber(channel.subscriberCount)}</div>
@@ -630,11 +777,11 @@
             return card;
         }
 
-        function displayChannels(channels) {
-            channelList.innerHTML = '';
+        function displayChannels(channels, container) {
+            container.innerHTML = '';
             channels.forEach(channel => {
                 const card = createChannelCard(channel);
-                channelList.appendChild(card);
+                container.appendChild(card);
             });
         }
 
@@ -664,8 +811,10 @@
         }
 
         async function searchChannels(query) {
+            loadingText.textContent = '채널 검색 중...';
+            loadingSubtext.textContent = '채널 검색 + 비디오 검색 + 주제 분석으로 관련 채널을 찾고 있습니다\n전체 콘텐츠 대비 관련성이 높은 채널만 표시합니다';
             loadingOverlay.classList.add('active');
-            error.style.display = 'none';
+            searchError.style.display = 'none';
             resultsInfo.style.display = 'none';
             channelList.innerHTML = '';
             filtersBox.classList.remove('active');
@@ -690,7 +839,7 @@
                     filtersBox.classList.add('active');
 
                     populateCountryFilter(allChannels);
-                    displayChannels(allChannels);
+                    displayChannels(allChannels, channelList);
                 } else {
                     resultsInfo.style.display = 'flex';
                     resultsText.textContent = `"${data.query}"에 대한 채널을 찾을 수 없습니다`;
@@ -698,8 +847,71 @@
             } catch (err) {
                 loadingOverlay.classList.remove('active');
                 searchButton.disabled = false;
-                error.style.display = 'block';
-                error.textContent = '오류: ' + err.message;
+                searchError.style.display = 'block';
+                searchError.textContent = '오류: ' + err.message;
+            }
+        }
+
+        async function loadTopChannels() {
+            loadingText.textContent = '국가별 순위 로딩 중...';
+            loadingSubtext.textContent = '각 국가의 인기 채널 정보를 가져오고 있습니다';
+            loadingOverlay.classList.add('active');
+            rankingsError.style.display = 'none';
+
+            try {
+                const response = await fetch('/api/top-channels');
+
+                if (!response.ok) {
+                    throw new Error('순위 데이터를 가져오는데 실패했습니다');
+                }
+
+                const data = await response.json();
+
+                loadingOverlay.classList.remove('active');
+                rankingsLoaded = true;
+
+                // Display rankings by country
+                rankingsContent.innerHTML = '';
+
+                ['KR', 'JP', 'US'].forEach(countryCode => {
+                    const channels = data[countryCode] || [];
+
+                    if (channels.length === 0) return;
+
+                    const section = document.createElement('div');
+                    section.className = 'country-section';
+
+                    const header = document.createElement('div');
+                    header.className = 'country-header';
+                    header.innerHTML = `
+                        <div class="country-flag">${countryFlags[countryCode] || ''}</div>
+                        <div class="country-name">${getCountryName(countryCode)} Top 5</div>
+                    `;
+                    section.appendChild(header);
+
+                    const channelGrid = document.createElement('div');
+                    channelGrid.className = 'channel-list';
+
+                    channels.forEach(channel => {
+                        const card = createChannelCard(channel, true);
+                        channelGrid.appendChild(card);
+                    });
+
+                    section.appendChild(channelGrid);
+                    rankingsContent.appendChild(section);
+                });
+
+                // Update "last updated" info if available
+                if (data.KR && data.KR.length > 0 && data.KR[0].updatedAt) {
+                    const updateDate = new Date(data.KR[0].updatedAt);
+                    document.getElementById('updateInfo').textContent =
+                        `마지막 업데이트: ${formatDateFull(updateDate)} | 매일 오전 3시에 자동 업데이트됩니다`;
+                }
+
+            } catch (err) {
+                loadingOverlay.classList.remove('active');
+                rankingsError.style.display = 'block';
+                rankingsError.textContent = '오류: ' + err.message;
             }
         }
 
