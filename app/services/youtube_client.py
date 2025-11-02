@@ -239,6 +239,80 @@ async def search_channels(q: str, max_results: int = 150, page_token: str = None
         }
 
 
+async def search_channel_by_name(channel_name: str) -> Optional[str]:
+    async with backoff_client() as client:
+        search_params = {
+            "part": "snippet",
+            "q": channel_name,
+            "type": "channel",
+            "maxResults": 1,
+            "key": settings.youtube_api_key,
+        }
+
+        try:
+            response = await client.get(f"{BASE}/search", params=search_params, timeout=10)
+            response.raise_for_status()
+            data = response.json()
+
+            items = data.get("items", [])
+            if items:
+                return items[0]["id"]["channelId"]
+        except Exception:
+            pass
+
+        return None
+
+
+async def get_channels_by_names(channel_names: List[str]) -> List[Dict[str, Any]]:
+    channel_ids = []
+
+    for name in channel_names:
+        channel_id = await search_channel_by_name(name)
+        if channel_id:
+            channel_ids.append(channel_id)
+
+    if not channel_ids:
+        return []
+
+    async with backoff_client() as client:
+        all_channels_data = []
+        batch_size = 50
+
+        for i in range(0, len(channel_ids), batch_size):
+            batch_ids = channel_ids[i:i + batch_size]
+            channels_params = {
+                "part": "snippet,statistics",
+                "id": ",".join(batch_ids),
+                "key": settings.youtube_api_key,
+            }
+
+            channels_response = await client.get(f"{BASE}/channels", params=channels_params, timeout=20)
+            channels_response.raise_for_status()
+            channels_data = channels_response.json()
+            all_channels_data.extend(channels_data.get("items", []))
+
+        channels = []
+        for channel in all_channels_data:
+            subscriber_count = int(channel["statistics"].get("subscriberCount", 0))
+            video_count = int(channel["statistics"].get("videoCount", 0))
+            view_count = int(channel["statistics"].get("viewCount", 0))
+
+            channels.append({
+                "channelId": channel["id"],
+                "title": channel["snippet"]["title"],
+                "description": channel["snippet"]["description"],
+                "thumbnailUrl": channel["snippet"]["thumbnails"]["default"]["url"],
+                "subscriberCount": subscriber_count,
+                "videoCount": video_count,
+                "viewCount": view_count,
+                "customUrl": channel["snippet"].get("customUrl", ""),
+                "publishedAt": channel["snippet"].get("publishedAt", ""),
+            })
+
+        channels.sort(key=lambda x: x["subscriberCount"], reverse=True)
+        return channels
+
+
 async def get_top_channels_by_country(country_code: str, top_n: int = 5) -> List[Dict[str, Any]]:
     async with backoff_client() as client:
         all_channel_ids = set()

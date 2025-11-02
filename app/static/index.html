@@ -449,6 +449,218 @@
             border-radius: 10px;
         }
 
+        /* Country Tabs for Rankings */
+        .country-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .country-tab-button {
+            padding: 12px 30px;
+            background: rgba(255, 255, 255, 0.3);
+            color: white;
+            border: 2px solid rgba(255, 255, 255, 0.5);
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: bold;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .country-tab-button:hover {
+            background: rgba(255, 255, 255, 0.4);
+        }
+
+        .country-tab-button.active {
+            background: white;
+            color: #667eea;
+            border-color: white;
+        }
+
+        .country-tab-content {
+            display: none;
+        }
+
+        .country-tab-content.active {
+            display: block;
+        }
+
+        /* Rankings List/Table Format */
+        .rankings-container {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+
+        .rankings-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .rankings-table thead {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .rankings-table th {
+            padding: 15px 20px;
+            text-align: left;
+            font-weight: bold;
+            font-size: 0.95em;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .rankings-table th.rank-col {
+            width: 60px;
+            text-align: center;
+        }
+
+        .rankings-table th.thumbnail-col {
+            width: 80px;
+        }
+
+        .rankings-table th.channel-col {
+            min-width: 200px;
+        }
+
+        .rankings-table th.stats-col {
+            width: 120px;
+            text-align: right;
+        }
+
+        .rankings-table tbody tr {
+            border-bottom: 1px solid #e0e0e0;
+            transition: background-color 0.2s;
+            cursor: pointer;
+        }
+
+        .rankings-table tbody tr:hover {
+            background-color: #f5f5f5;
+        }
+
+        .rankings-table tbody tr:last-child {
+            border-bottom: none;
+        }
+
+        .rankings-table td {
+            padding: 15px 20px;
+            vertical-align: middle;
+        }
+
+        .rank-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 35px;
+            height: 35px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 50%;
+            font-weight: bold;
+            font-size: 1.1em;
+        }
+
+        .rank-badge.top-3 {
+            width: 40px;
+            height: 40px;
+            font-size: 1.2em;
+        }
+
+        .rank-badge.rank-1 {
+            background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
+            color: #333;
+        }
+
+        .rank-badge.rank-2 {
+            background: linear-gradient(135deg, #c0c0c0 0%, #e8e8e8 100%);
+            color: #333;
+        }
+
+        .rank-badge.rank-3 {
+            background: linear-gradient(135deg, #cd7f32 0%, #daa520 100%);
+            color: white;
+        }
+
+        .table-thumbnail {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+
+        .channel-info {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .channel-name {
+            font-weight: bold;
+            font-size: 1.05em;
+            color: #333;
+        }
+
+        .channel-custom-url {
+            font-size: 0.85em;
+            color: #666;
+        }
+
+        .stat-value-table {
+            font-weight: bold;
+            color: #667eea;
+            font-size: 1em;
+            text-align: right;
+        }
+
+        @media (max-width: 768px) {
+            .rankings-table {
+                font-size: 0.85em;
+            }
+
+            .rankings-table th,
+            .rankings-table td {
+                padding: 10px 8px;
+            }
+
+            .table-thumbnail {
+                width: 45px;
+                height: 45px;
+            }
+
+            .rank-badge {
+                width: 28px;
+                height: 28px;
+                font-size: 0.9em;
+            }
+
+            .rank-badge.top-3 {
+                width: 32px;
+                height: 32px;
+                font-size: 1em;
+            }
+
+            .channel-name {
+                font-size: 0.95em;
+            }
+
+            .country-tabs {
+                gap: 5px;
+            }
+
+            .country-tab-button {
+                padding: 10px 20px;
+                font-size: 0.9em;
+            }
+        }
+
         @media (max-width: 768px) {
             h1 {
                 font-size: 1.8em;
@@ -550,7 +762,26 @@
 
             <div id="rankingsError" class="error" style="display: none;"></div>
 
-            <div id="rankingsContent"></div>
+            <!-- Country Tabs -->
+            <div class="country-tabs">
+                <button class="country-tab-button active" data-country="KR">
+                    <span>🇰🇷</span>
+                    <span>대한민국</span>
+                </button>
+                <button class="country-tab-button" data-country="JP">
+                    <span>🇯🇵</span>
+                    <span>일본</span>
+                </button>
+                <button class="country-tab-button" data-country="US">
+                    <span>🇺🇸</span>
+                    <span>미국</span>
+                </button>
+            </div>
+
+            <!-- Country Tab Contents -->
+            <div id="krTab" class="country-tab-content active"></div>
+            <div id="jpTab" class="country-tab-content"></div>
+            <div id="usTab" class="country-tab-content"></div>
         </div>
 
         <div class="loading-overlay" id="loadingOverlay">
@@ -601,12 +832,15 @@
         const filtersBox = document.getElementById('filtersBox');
         const subscriberFilters = document.getElementById('subscriberFilters');
         const countryFilter = document.getElementById('countryFilter');
-        const rankingsContent = document.getElementById('rankingsContent');
 
         let allChannels = [];
         let currentSubscriberRange = 'all';
         let currentCountry = '';
         let rankingsLoaded = false;
+
+        // Country tab elements
+        const countryTabButtons = document.querySelectorAll('.country-tab-button');
+        const countryTabContents = document.querySelectorAll('.country-tab-content');
 
         // Country codes mapping
         const countryNames = {
@@ -678,6 +912,78 @@
 
         function getCountryName(code) {
             return countryNames[code] || code;
+        }
+
+        // Country tab switching
+        countryTabButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                const countryCode = button.dataset.country;
+
+                // Remove active class from all country tabs
+                countryTabButtons.forEach(btn => btn.classList.remove('active'));
+                countryTabContents.forEach(content => content.classList.remove('active'));
+
+                // Add active class to clicked tab
+                button.classList.add('active');
+                document.getElementById(`${countryCode.toLowerCase()}Tab`).classList.add('active');
+            });
+        });
+
+        // Create rankings table for a country
+        function createRankingsTable(channels, countryCode) {
+            if (!channels || channels.length === 0) {
+                return '<div style="padding: 40px; text-align: center; color: #999;">데이터가 없습니다</div>';
+            }
+
+            const rows = channels.map(channel => {
+                const rankClass = channel.rank <= 3 ? `rank-${channel.rank} top-3` : '';
+
+                return `
+                    <tr onclick="window.open('https://www.youtube.com/channel/${channel.channelId}', '_blank')">
+                        <td style="text-align: center;">
+                            <div class="rank-badge ${rankClass}">${channel.rank}</div>
+                        </td>
+                        <td>
+                            <img src="${channel.thumbnailUrl}" alt="${channel.title}" class="table-thumbnail">
+                        </td>
+                        <td>
+                            <div class="channel-info">
+                                <div class="channel-name">${channel.title}</div>
+                                ${channel.customUrl ? `<div class="channel-custom-url">@${channel.customUrl.replace('@', '')}</div>` : ''}
+                            </div>
+                        </td>
+                        <td>
+                            <div class="stat-value-table">${formatNumber(channel.subscriberCount)}</div>
+                        </td>
+                        <td>
+                            <div class="stat-value-table">${formatNumber(channel.videoCount)}</div>
+                        </td>
+                        <td>
+                            <div class="stat-value-table">${formatNumber(channel.viewCount)}</div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+
+            return `
+                <div class="rankings-container">
+                    <table class="rankings-table">
+                        <thead>
+                            <tr>
+                                <th class="rank-col">순위</th>
+                                <th class="thumbnail-col"></th>
+                                <th class="channel-col">채널명</th>
+                                <th class="stats-col">구독자</th>
+                                <th class="stats-col">동영상</th>
+                                <th class="stats-col">조회수</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${rows}
+                        </tbody>
+                    </table>
+                </div>
+            `;
         }
 
         function filterChannels() {
@@ -870,40 +1176,18 @@
                 loadingOverlay.classList.remove('active');
                 rankingsLoaded = true;
 
-                // Display rankings by country
-                rankingsContent.innerHTML = '';
+                // Display rankings in list format for each country
+                const krChannels = data.KR || [];
+                const jpChannels = data.JP || [];
+                const usChannels = data.US || [];
 
-                ['KR', 'JP', 'US'].forEach(countryCode => {
-                    const channels = data[countryCode] || [];
-
-                    if (channels.length === 0) return;
-
-                    const section = document.createElement('div');
-                    section.className = 'country-section';
-
-                    const header = document.createElement('div');
-                    header.className = 'country-header';
-                    header.innerHTML = `
-                        <div class="country-flag">${countryFlags[countryCode] || ''}</div>
-                        <div class="country-name">${getCountryName(countryCode)} Top 5</div>
-                    `;
-                    section.appendChild(header);
-
-                    const channelGrid = document.createElement('div');
-                    channelGrid.className = 'channel-list';
-
-                    channels.forEach(channel => {
-                        const card = createChannelCard(channel, true);
-                        channelGrid.appendChild(card);
-                    });
-
-                    section.appendChild(channelGrid);
-                    rankingsContent.appendChild(section);
-                });
+                document.getElementById('krTab').innerHTML = createRankingsTable(krChannels, 'KR');
+                document.getElementById('jpTab').innerHTML = createRankingsTable(jpChannels, 'JP');
+                document.getElementById('usTab').innerHTML = createRankingsTable(usChannels, 'US');
 
                 // Update "last updated" info if available
-                if (data.KR && data.KR.length > 0 && data.KR[0].updatedAt) {
-                    const updateDate = new Date(data.KR[0].updatedAt);
+                if (krChannels.length > 0 && krChannels[0].updatedAt) {
+                    const updateDate = new Date(krChannels[0].updatedAt);
                     document.getElementById('updateInfo').textContent =
                         `마지막 업데이트: ${formatDateFull(updateDate)} | 데이터는 하루에 한 번 자동으로 업데이트됩니다`;
                 }
