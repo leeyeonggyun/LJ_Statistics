@@ -241,22 +241,39 @@ async def search_channels(q: str, max_results: int = 150, page_token: str = None
 
 async def get_top_channels_by_country(country_code: str, top_n: int = 5) -> List[Dict[str, Any]]:
     async with backoff_client() as client:
-        videos_params = {
-            "part": "snippet",
-            "chart": "mostPopular",
-            "regionCode": country_code,
-            "maxResults": 50,  # Fetch more to get diverse channels
-            "key": settings.youtube_api_key,
-        }
+        all_channel_ids = set()
+        page_token = None
+        pages_to_fetch = 3
 
-        videos_response = await client.get(f"{BASE}/videos", params=videos_params, timeout=20)
-        videos_response.raise_for_status()
-        videos_data = videos_response.json()
+        for page in range(pages_to_fetch):
+            videos_params = {
+                "part": "snippet",
+                "chart": "mostPopular",
+                "regionCode": country_code,
+                "maxResults": 50,
+                "key": settings.youtube_api_key,
+            }
 
-        channel_ids = set()
-        for item in videos_data.get("items", []):
-            channel_id = item["snippet"]["channelId"]
-            channel_ids.add(channel_id)
+            if page_token:
+                videos_params["pageToken"] = page_token
+
+            videos_response = await client.get(f"{BASE}/videos", params=videos_params, timeout=20)
+            videos_response.raise_for_status()
+            videos_data = videos_response.json()
+
+            items = videos_data.get("items", [])
+            if not items:
+                break
+
+            for item in items:
+                channel_id = item["snippet"]["channelId"]
+                all_channel_ids.add(channel_id)
+
+            page_token = videos_data.get("nextPageToken")
+            if not page_token:
+                break
+
+        channel_ids = all_channel_ids
 
         if not channel_ids:
             return []
@@ -273,6 +290,11 @@ async def get_top_channels_by_country(country_code: str, top_n: int = 5) -> List
 
         channels = []
         for channel in channels_data.get("items", []):
+            channel_country = channel["snippet"].get("country", "")
+
+            if channel_country != country_code:
+                continue
+
             subscriber_count = int(channel["statistics"].get("subscriberCount", 0))
             video_count = int(channel["statistics"].get("videoCount", 0))
             view_count = int(channel["statistics"].get("viewCount", 0))
