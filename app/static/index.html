@@ -545,7 +545,7 @@
         <!-- Rankings Tab Content -->
         <div id="rankingsTab" class="tab-content">
             <div class="update-info" id="updateInfo">
-                데이터는 매일 오전 3시에 자동 업데이트됩니다
+                데이터는 하루에 한 번 자동으로 업데이트됩니다
             </div>
 
             <div id="rankingsError" class="error" style="display: none;"></div>
@@ -905,7 +905,7 @@
                 if (data.KR && data.KR.length > 0 && data.KR[0].updatedAt) {
                     const updateDate = new Date(data.KR[0].updatedAt);
                     document.getElementById('updateInfo').textContent =
-                        `마지막 업데이트: ${formatDateFull(updateDate)} | 매일 오전 3시에 자동 업데이트됩니다`;
+                        `마지막 업데이트: ${formatDateFull(updateDate)} | 데이터는 하루에 한 번 자동으로 업데이트됩니다`;
                 }
 
             } catch (err) {
