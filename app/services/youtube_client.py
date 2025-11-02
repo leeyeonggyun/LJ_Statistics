@@ -277,14 +277,11 @@ async def search_channel_by_name(channel_name: str) -> Optional[str]:
         return None
 
 
-async def get_channels_by_names(channel_names: List[str]) -> List[Dict[str, Any]]:
-    channel_ids = []
-
-    for name in channel_names:
-        channel_id = await search_channel_by_name(name)
-        if channel_id:
-            channel_ids.append(channel_id)
-
+async def get_channels_by_ids(channel_ids: List[str]) -> List[Dict[str, Any]]:
+    """
+    Get channel information directly by channel IDs.
+    This is much more efficient than searching by name (1 unit vs 100 units per channel).
+    """
     if not channel_ids:
         return []
 
@@ -325,6 +322,22 @@ async def get_channels_by_names(channel_names: List[str]) -> List[Dict[str, Any]
 
         channels.sort(key=lambda x: x["subscriberCount"], reverse=True)
         return channels
+
+
+async def get_channels_by_names(channel_names: List[str]) -> List[Dict[str, Any]]:
+    """
+    Get channel information by searching for channel names.
+    WARNING: This uses 100 API units per channel name!
+    Use get_channels_by_ids() instead whenever possible.
+    """
+    channel_ids = []
+
+    for name in channel_names:
+        channel_id = await search_channel_by_name(name)
+        if channel_id:
+            channel_ids.append(channel_id)
+
+    return await get_channels_by_ids(channel_ids)
 
 
 async def get_top_channels_by_country(country_code: str, top_n: int = 5) -> List[Dict[str, Any]]:

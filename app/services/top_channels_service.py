@@ -2,8 +2,8 @@
 import asyncio
 from sqlalchemy import delete
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.services.youtube_client import get_channels_by_names
-from app.services.channel_names import CHANNEL_NAMES
+from app.services.youtube_client import get_channels_by_ids, get_channels_by_names
+from app.services.channel_names import CHANNEL_IDS, CHANNEL_NAMES
 from app.models.top_channel import TopChannel
 from app.core.database import async_session_maker
 import logging
@@ -34,8 +34,19 @@ async def update_top_channels():
 
             for country_code in COUNTRIES:
                 logger.info(f"Fetching top channels for {country_code}...")
-                channel_names = CHANNEL_NAMES.get(country_code, [])
-                channels = await get_channels_by_names(channel_names)
+
+                # Use channel IDs if available (efficient - only 1 unit per 50 channels)
+                # Otherwise fall back to channel names (expensive - 100 units per channel)
+                channel_ids = CHANNEL_IDS.get(country_code, [])
+
+                if channel_ids:
+                    logger.info(f"Using {len(channel_ids)} channel IDs for {country_code}")
+                    channels = await get_channels_by_ids(channel_ids)
+                else:
+                    logger.warning(f"No channel IDs found for {country_code}, falling back to name search (expensive!)")
+                    logger.warning(f"Please run scripts/collect_channel_ids.py to populate channel IDs")
+                    channel_names = CHANNEL_NAMES.get(country_code, [])
+                    channels = await get_channels_by_names(channel_names)
 
                 for rank, channel in enumerate(channels, start=1):
                     top_channel = TopChannel(
