@@ -23,9 +23,8 @@ async def lifespan(app: FastAPI):
     from app.core.database import engine, Base
     from app.models import TopChannel
 
-    logger.info("Recreating database tables...")
+    logger.info("Creating database tables...")
     async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.drop_all)
         await conn.run_sync(Base.metadata.create_all)
     logger.info("Database tables created.")
 
@@ -33,12 +32,6 @@ async def lifespan(app: FastAPI):
     scheduler.add_job(update_top_channels, 'cron', hour=3, minute=0)
     scheduler.start()
     logger.info("Scheduler started. Top channels will update daily at 3 AM.")
-
-    try:
-        logger.info("Running initial top channels update...")
-        await update_top_channels()
-    except Exception as e:
-        logger.error(f"Initial top channels update failed: {e}")
 
     yield
 

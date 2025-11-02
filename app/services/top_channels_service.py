@@ -12,13 +12,24 @@ logger = logging.getLogger(__name__)
 COUNTRIES = ["KR", "JP", "US"]
 
 async def update_top_channels():
+    from sqlalchemy import func
+    from datetime import date, timedelta
+
     logger.info("Starting top channels update...")
 
     async with async_session_maker() as session:
         try:
-            await session.execute(delete(TopChannel))
+            today = date.today()
+            seven_days_ago = today - timedelta(days=7)
+
+            await session.execute(
+                delete(TopChannel).where(func.date(TopChannel.created_at) == today)
+            )
+            await session.execute(
+                delete(TopChannel).where(func.date(TopChannel.created_at) < seven_days_ago)
+            )
             await session.commit()
-            logger.info("Cleared existing top channels data")
+            logger.info("Cleared today's and old top channels data")
 
             for country_code in COUNTRIES:
                 logger.info(f"Fetching top channels for {country_code}...")
@@ -52,10 +63,15 @@ async def update_top_channels():
 
 
 async def get_top_channels_from_db(session: AsyncSession) -> dict:
-    from sqlalchemy import select
+    from sqlalchemy import select, func
+    from datetime import date
+
+    today = date.today()
 
     result = await session.execute(
-        select(TopChannel).order_by(TopChannel.country_code, TopChannel.rank)
+        select(TopChannel)
+        .where(func.date(TopChannel.created_at) == today)
+        .order_by(TopChannel.country_code, TopChannel.rank)
     )
     channels = result.scalars().all()
 
@@ -76,3 +92,17 @@ async def get_top_channels_from_db(session: AsyncSession) -> dict:
         })
 
     return grouped
+
+
+async def has_today_data(session: AsyncSession) -> bool:
+    from sqlalchemy import select, func
+    from datetime import date
+
+    today = date.today()
+
+    result = await session.execute(
+        select(func.count(TopChannel.id))
+        .where(func.date(TopChannel.created_at) == today)
+    )
+    count = result.scalar()
+    return count > 0
