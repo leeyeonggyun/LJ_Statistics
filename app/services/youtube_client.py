@@ -278,18 +278,25 @@ async def get_top_channels_by_country(country_code: str, top_n: int = 5) -> List
         if not channel_ids:
             return []
 
-        channels_params = {
-            "part": "snippet,statistics",
-            "id": ",".join(channel_ids),
-            "key": settings.youtube_api_key,
-        }
+        all_channels_data = []
+        channel_ids_list = list(channel_ids)
+        batch_size = 50
 
-        channels_response = await client.get(f"{BASE}/channels", params=channels_params, timeout=20)
-        channels_response.raise_for_status()
-        channels_data = channels_response.json()
+        for i in range(0, len(channel_ids_list), batch_size):
+            batch_ids = channel_ids_list[i:i + batch_size]
+            channels_params = {
+                "part": "snippet,statistics",
+                "id": ",".join(batch_ids),
+                "key": settings.youtube_api_key,
+            }
+
+            channels_response = await client.get(f"{BASE}/channels", params=channels_params, timeout=20)
+            channels_response.raise_for_status()
+            channels_data = channels_response.json()
+            all_channels_data.extend(channels_data.get("items", []))
 
         channels = []
-        for channel in channels_data.get("items", []):
+        for channel in all_channels_data:
             channel_country = channel["snippet"].get("country", "")
 
             if channel_country != country_code:
