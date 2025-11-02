@@ -16,13 +16,20 @@ logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    from app.core.database import engine, Base
+    from app.core.database import engine, Base, async_session_maker
     from app.models import TopChannel
+    from sqlalchemy import delete
 
     logger.info("Creating database tables...")
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     logger.info("Database tables created.")
+
+    logger.info("Clearing all top channels data...")
+    async with async_session_maker() as session:
+        await session.execute(delete(TopChannel))
+        await session.commit()
+    logger.info("All top channels data cleared.")
 
     yield
 
