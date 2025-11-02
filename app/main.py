@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     from app.core.database import engine, Base, async_session_maker
-    from app.models import TopChannel
+    from app.models import TopChannel, SearchResult
     from sqlalchemy import delete
 
     logger.info("Creating database tables...")
