@@ -286,21 +286,37 @@ async def get_channels_by_ids(channel_ids: List[str]) -> List[Dict[str, Any]]:
         return []
 
     async with backoff_client() as client:
-        all_channels_data = []
         batch_size = 50
 
+        # Create batches
+        batches = []
         for i in range(0, len(channel_ids), batch_size):
             batch_ids = channel_ids[i:i + batch_size]
+            batches.append(batch_ids)
+
+        # Fetch all batches in parallel
+        async def fetch_batch(batch_ids):
             channels_params = {
                 "part": "snippet,statistics",
                 "id": ",".join(batch_ids),
                 "key": settings.youtube_api_key,
             }
-
             channels_response = await client.get(f"{BASE}/channels", params=channels_params, timeout=20)
             channels_response.raise_for_status()
             channels_data = channels_response.json()
-            all_channels_data.extend(channels_data.get("items", []))
+            return channels_data.get("items", [])
+
+        # Execute all batch requests in parallel
+        batch_results = await asyncio.gather(*[fetch_batch(batch) for batch in batches], return_exceptions=True)
+
+        # Combine results
+        all_channels_data = []
+        for result in batch_results:
+            if isinstance(result, list):
+                all_channels_data.extend(result)
+            elif isinstance(result, Exception):
+                # Log exception but continue
+                pass
 
         channels = []
         for channel in all_channels_data:
@@ -330,12 +346,18 @@ async def get_channels_by_names(channel_names: List[str]) -> List[Dict[str, Any]
     WARNING: This uses 100 API units per channel name!
     Use get_channels_by_ids() instead whenever possible.
     """
-    channel_ids = []
+    # Search for all channels in parallel for faster performance
+    search_tasks = [search_channel_by_name(name) for name in channel_names]
+    search_results = await asyncio.gather(*search_tasks, return_exceptions=True)
 
-    for name in channel_names:
-        channel_id = await search_channel_by_name(name)
-        if channel_id:
-            channel_ids.append(channel_id)
+    # Filter out None values and exceptions
+    channel_ids = []
+    for result in search_results:
+        if isinstance(result, str):  # Valid channel ID
+            channel_ids.append(result)
+        elif isinstance(result, Exception):
+            # Log the exception but continue
+            pass
 
     return await get_channels_by_ids(channel_ids)
 

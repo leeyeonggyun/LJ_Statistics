@@ -6,11 +6,13 @@ from app.services.youtube_client import get_channels_by_ids, get_channels_by_nam
 from app.services.channel_names import CHANNEL_IDS, CHANNEL_NAMES
 from app.models.top_channel import TopChannel
 from app.core.database import async_session_maker
+from app.core.redis import cache_get, cache_set
 import logging
 
 logger = logging.getLogger(__name__)
 
 COUNTRIES = ["KR", "JP", "US"]
+CACHE_TTL = 86400  # 24 hours in seconds
 
 async def update_top_channels():
     from sqlalchemy import func
@@ -79,6 +81,13 @@ async def get_top_channels_from_db(session: AsyncSession) -> dict:
     from sqlalchemy import select, func
     from datetime import date
 
+    # Try to get from cache first
+    cache_key = f"top_channels:{date.today()}"
+    cached_data = await cache_get(cache_key)
+    if cached_data:
+        logger.info("Returning top channels from cache")
+        return cached_data
+
     today = date.today()
 
     result = await session.execute(
@@ -103,6 +112,10 @@ async def get_top_channels_from_db(session: AsyncSession) -> dict:
             "publishedAt": channel.published_at,
             "updatedAt": channel.updated_at.isoformat() if channel.updated_at else None,
         })
+
+    # Cache the result for 24 hours
+    await cache_set(cache_key, grouped, ttl=CACHE_TTL)
+    logger.info("Cached top channels data")
 
     return grouped
 
