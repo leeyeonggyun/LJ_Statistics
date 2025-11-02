@@ -245,7 +245,7 @@ async def search_channel_by_name(channel_name: str) -> Optional[str]:
             "part": "snippet",
             "q": channel_name,
             "type": "channel",
-            "maxResults": 1,
+            "maxResults": 10,  # Get more results to find exact match
             "key": settings.youtube_api_key,
         }
 
@@ -255,8 +255,22 @@ async def search_channel_by_name(channel_name: str) -> Optional[str]:
             data = response.json()
 
             items = data.get("items", [])
-            if items:
-                return items[0]["id"]["channelId"]
+
+            # Find exact match first
+            for item in items:
+                item_title = item["snippet"]["title"]
+                if item_title == channel_name:
+                    return item["id"]["channelId"]
+
+            # If no exact match, try case-insensitive match
+            for item in items:
+                item_title = item["snippet"]["title"]
+                if item_title.lower() == channel_name.lower():
+                    return item["id"]["channelId"]
+
+            # If still no match, return None (don't use partial match)
+            return None
+
         except Exception:
             pass
 
