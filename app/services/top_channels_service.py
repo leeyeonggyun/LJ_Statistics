@@ -12,7 +12,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 COUNTRIES = ["KR", "JP", "US"]
-CACHE_TTL = 86400  # 24 hours in seconds
+CACHE_TTL = 86400
 
 async def update_top_channels():
     from sqlalchemy import func
@@ -37,8 +37,6 @@ async def update_top_channels():
             for country_code in COUNTRIES:
                 logger.info(f"Fetching top channels for {country_code}...")
 
-                # Use channel IDs if available (efficient - only 1 unit per 50 channels)
-                # Otherwise fall back to channel names (expensive - 100 units per channel)
                 channel_ids = CHANNEL_IDS.get(country_code, [])
 
                 if channel_ids:
@@ -81,7 +79,6 @@ async def get_top_channels_from_db(session: AsyncSession) -> dict:
     from sqlalchemy import select, func
     from datetime import date
 
-    # Try to get from cache first
     cache_key = f"top_channels:{date.today()}"
     cached_data = await cache_get(cache_key)
     if cached_data:
@@ -113,7 +110,6 @@ async def get_top_channels_from_db(session: AsyncSession) -> dict:
             "updatedAt": channel.updated_at.isoformat() if channel.updated_at else None,
         })
 
-    # Cache the result for 24 hours
     await cache_set(cache_key, grouped, ttl=CACHE_TTL)
     logger.info("Cached top channels data")
 

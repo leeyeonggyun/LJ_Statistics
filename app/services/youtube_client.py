@@ -122,7 +122,7 @@ async def search_channels(q: str, max_results: int = 150, page_token: str = None
         for i in range(0, len(all_candidate_ids), batch_size):
             batch_ids = all_candidate_ids[i:i + batch_size]
             channels_params = {
-                "part": "snippet,statistics,contentDetails,topicDetails",  # Added topicDetails
+                "part": "snippet,statistics,contentDetails,topicDetails",
                 "id": ",".join(batch_ids),
                 "key": settings.youtube_api_key,
             }
@@ -156,18 +156,18 @@ async def search_channels(q: str, max_results: int = 150, page_token: str = None
 
 
             if is_direct_match:
-                filtered_channels.append((channel_id, related_videos + 10, channel))  # Bonus score
+                filtered_channels.append((channel_id, related_videos + 10, channel))
             elif topic_match:
                 if total_videos == 0:
                     continue
                 elif total_videos < 1000:
-                    if related_videos >= 2:  # Reduced from 3
+                    if related_videos >= 2:
                         filtered_channels.append((channel_id, related_videos + 5, channel))
                 elif total_videos < 5000:
-                    if related_videos >= 3:  # Reduced from 5
+                    if related_videos >= 3:
                         filtered_channels.append((channel_id, related_videos + 5, channel))
                 else:
-                    if related_videos >= 5:  # Reduced from 10
+                    if related_videos >= 5:
                         filtered_channels.append((channel_id, related_videos + 5, channel))
             elif total_videos == 0:
                 continue
@@ -228,7 +228,7 @@ async def search_channels(q: str, max_results: int = 150, page_token: str = None
                 "country": channel["snippet"].get("country", ""),
                 "publishedAt": channel["snippet"].get("publishedAt", ""),
                 "latestUploadDate": latest_upload_date,
-                "topics": topics,  # Added topic information
+                "topics": topics,
             })
 
         results.sort(key=lambda x: x["subscriberCount"], reverse=True)
@@ -245,7 +245,7 @@ async def search_channel_by_name(channel_name: str) -> Optional[str]:
             "part": "snippet",
             "q": channel_name,
             "type": "channel",
-            "maxResults": 10,  # Get more results to find exact match
+            "maxResults": 10,
             "key": settings.youtube_api_key,
         }
 
@@ -256,19 +256,16 @@ async def search_channel_by_name(channel_name: str) -> Optional[str]:
 
             items = data.get("items", [])
 
-            # Find exact match first
             for item in items:
                 item_title = item["snippet"]["title"]
                 if item_title == channel_name:
                     return item["id"]["channelId"]
 
-            # If no exact match, try case-insensitive match
             for item in items:
                 item_title = item["snippet"]["title"]
                 if item_title.lower() == channel_name.lower():
                     return item["id"]["channelId"]
 
-            # If still no match, return None (don't use partial match)
             return None
 
         except Exception:
@@ -278,23 +275,17 @@ async def search_channel_by_name(channel_name: str) -> Optional[str]:
 
 
 async def get_channels_by_ids(channel_ids: List[str]) -> List[Dict[str, Any]]:
-    """
-    Get channel information directly by channel IDs.
-    This is much more efficient than searching by name (1 unit vs 100 units per channel).
-    """
     if not channel_ids:
         return []
 
     async with backoff_client() as client:
         batch_size = 50
 
-        # Create batches
         batches = []
         for i in range(0, len(channel_ids), batch_size):
             batch_ids = channel_ids[i:i + batch_size]
             batches.append(batch_ids)
 
-        # Fetch all batches in parallel
         async def fetch_batch(batch_ids):
             channels_params = {
                 "part": "snippet,statistics",
@@ -306,16 +297,13 @@ async def get_channels_by_ids(channel_ids: List[str]) -> List[Dict[str, Any]]:
             channels_data = channels_response.json()
             return channels_data.get("items", [])
 
-        # Execute all batch requests in parallel
         batch_results = await asyncio.gather(*[fetch_batch(batch) for batch in batches], return_exceptions=True)
 
-        # Combine results
         all_channels_data = []
         for result in batch_results:
             if isinstance(result, list):
                 all_channels_data.extend(result)
             elif isinstance(result, Exception):
-                # Log exception but continue
                 pass
 
         channels = []
@@ -341,22 +329,14 @@ async def get_channels_by_ids(channel_ids: List[str]) -> List[Dict[str, Any]]:
 
 
 async def get_channels_by_names(channel_names: List[str]) -> List[Dict[str, Any]]:
-    """
-    Get channel information by searching for channel names.
-    WARNING: This uses 100 API units per channel name!
-    Use get_channels_by_ids() instead whenever possible.
-    """
-    # Search for all channels in parallel for faster performance
     search_tasks = [search_channel_by_name(name) for name in channel_names]
     search_results = await asyncio.gather(*search_tasks, return_exceptions=True)
 
-    # Filter out None values and exceptions
     channel_ids = []
     for result in search_results:
-        if isinstance(result, str):  # Valid channel ID
+        if isinstance(result, str):
             channel_ids.append(result)
         elif isinstance(result, Exception):
-            # Log the exception but continue
             pass
 
     return await get_channels_by_ids(channel_ids)

@@ -1,5 +1,4 @@
 
-# Channel names for ID lookup (used by helper script)
 CHANNEL_NAMES = {
     "KR": [
         "김프로KIMPRO",
@@ -99,16 +98,8 @@ CHANNEL_NAMES = {
     ],
 }
 
-# Channel IDs - populated by running the helper script once
-# This avoids using the expensive search API (100 units per search)
 CHANNEL_IDS = {
-    "KR": [
-        # TODO: Run scripts/collect_channel_ids.py to populate these IDs
-    ],
-    "JP": [
-        # TODO: Run scripts/collect_channel_ids.py to populate these IDs
-    ],
-    "US": [
-        # TODO: Run scripts/collect_channel_ids.py to populate these IDs
-    ],
+    "KR": [],
+    "JP": [],
+    "US": [],
 }

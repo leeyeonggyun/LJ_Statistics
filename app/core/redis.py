@@ -6,12 +6,10 @@ from app.core.settings import settings
 
 logger = logging.getLogger(__name__)
 
-# Redis client
 _redis_client: Optional[redis.Redis] = None
 
 
 async def get_redis() -> redis.Redis:
-    """Get Redis client instance"""
     global _redis_client
 
     if _redis_client is None:
@@ -21,7 +19,6 @@ async def get_redis() -> redis.Redis:
                 encoding="utf-8",
                 decode_responses=True
             )
-            # Test connection
             await _redis_client.ping()
             logger.info("Redis connection established")
         except Exception as e:
@@ -32,7 +29,6 @@ async def get_redis() -> redis.Redis:
 
 
 async def cache_get(key: str) -> Optional[Any]:
-    """Get value from cache"""
     try:
         client = await get_redis()
         if client is None:
@@ -48,7 +44,6 @@ async def cache_get(key: str) -> Optional[Any]:
 
 
 async def cache_set(key: str, value: Any, ttl: int = 3600) -> bool:
-    """Set value in cache with TTL (in seconds)"""
     try:
         client = await get_redis()
         if client is None:
@@ -63,7 +58,6 @@ async def cache_set(key: str, value: Any, ttl: int = 3600) -> bool:
 
 
 async def cache_delete(key: str) -> bool:
-    """Delete key from cache"""
     try:
         client = await get_redis()
         if client is None:
@@ -77,7 +71,6 @@ async def cache_delete(key: str) -> bool:
 
 
 async def cache_clear_pattern(pattern: str) -> int:
-    """Delete all keys matching pattern"""
     try:
         client = await get_redis()
         if client is None:
