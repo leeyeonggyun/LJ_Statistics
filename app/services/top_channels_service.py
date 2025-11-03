@@ -41,12 +41,24 @@ async def update_top_channels():
 
                 if channel_ids:
                     logger.info(f"Using {len(channel_ids)} channel IDs for {country_code}")
-                    channels = await get_channels_by_ids(channel_ids)
+                    try:
+                        channels = await get_channels_by_ids(channel_ids)
+                    except Exception as e:
+                        logger.error(f"Failed to get channels by IDs for {country_code}: {e}")
+                        channels = []
                 else:
                     logger.warning(f"No channel IDs found for {country_code}, falling back to name search (expensive!)")
                     logger.warning(f"Please run scripts/collect_channel_ids.py to populate channel IDs")
                     channel_names = CHANNEL_NAMES.get(country_code, [])
-                    channels = await get_channels_by_names(channel_names)
+                    try:
+                        channels = await get_channels_by_names(channel_names)
+                    except Exception as e:
+                        logger.error(f"Failed to get channels by names for {country_code}: {e}")
+                        channels = []
+
+                if not channels:
+                    logger.warning(f"No channels retrieved for {country_code}, skipping save")
+                    continue
 
                 for rank, channel in enumerate(channels, start=1):
                     top_channel = TopChannel(
