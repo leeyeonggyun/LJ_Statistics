@@ -90,12 +90,18 @@ async def update_top_channels():
 async def get_top_channels_from_db(session: AsyncSession) -> dict:
     from sqlalchemy import select, func
     from datetime import date
+    from app.core.redis import cache_delete
 
     cache_key = f"top_channels:{date.today()}"
     cached_data = await cache_get(cache_key)
     if cached_data:
-        logger.info("Returning top channels from cache")
-        return cached_data
+        total_channels = sum(len(cached_data.get(country, [])) for country in ["KR", "JP", "US"])
+        if total_channels == 0:
+            logger.warning("Cache has empty data, deleting cache")
+            await cache_delete(cache_key)
+        else:
+            logger.info("Returning top channels from cache")
+            return cached_data
 
     today = date.today()
 
