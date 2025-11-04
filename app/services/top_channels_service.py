@@ -31,7 +31,7 @@ async def update_top_channels():
             await session.execute(
                 delete(TopChannel).where(func.date(TopChannel.created_at) < seven_days_ago)
             )
-            await session.commit()
+            await session.flush()
             logger.info("Cleared today's and old top channels data")
 
             for country_code in COUNTRIES:
