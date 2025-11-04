@@ -83,10 +83,14 @@ async def update_top_channels():
 
 async def get_top_channels_from_db(session: AsyncSession) -> dict:
     from sqlalchemy import select
-    from datetime import date
+    from datetime import datetime, date, timezone, timedelta
     from app.core.redis import cache_delete
 
-    cache_key = f"top_channels:{date.today()}"
+    kst = timezone(timedelta(hours=9))
+    now_kst = datetime.now(kst)
+    today_kst = now_kst.date()
+
+    cache_key = f"top_channels:{today_kst}"
     cached_data = await cache_get(cache_key)
     if cached_data:
         total_channels = sum(len(cached_data.get(country, [])) for country in ["KR", "JP", "US"])
@@ -97,8 +101,12 @@ async def get_top_channels_from_db(session: AsyncSession) -> dict:
             logger.info("Returning top channels from cache")
             return cached_data
 
+    today_start_kst = datetime.combine(today_kst, datetime.min.time()).replace(tzinfo=kst)
+    today_start_utc = today_start_kst.astimezone(timezone.utc)
+
     result = await session.execute(
         select(TopChannel)
+        .where(TopChannel.created_at >= today_start_utc)
         .order_by(TopChannel.country_code, TopChannel.rank)
     )
     channels = result.scalars().all()
@@ -127,9 +135,18 @@ async def get_top_channels_from_db(session: AsyncSession) -> dict:
 
 async def has_today_data(session: AsyncSession) -> bool:
     from sqlalchemy import select, func
+    from datetime import datetime, date, timezone, timedelta
+
+    kst = timezone(timedelta(hours=9))
+    now_kst = datetime.now(kst)
+    today_kst = now_kst.date()
+
+    today_start_kst = datetime.combine(today_kst, datetime.min.time()).replace(tzinfo=kst)
+    today_start_utc = today_start_kst.astimezone(timezone.utc)
 
     result = await session.execute(
         select(func.count(TopChannel.id))
+        .where(TopChannel.created_at >= today_start_utc)
     )
     count = result.scalar()
     return count > 0
