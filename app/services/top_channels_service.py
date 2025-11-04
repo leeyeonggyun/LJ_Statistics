@@ -22,15 +22,6 @@ async def update_top_channels():
 
     async with async_session_maker() as session:
         try:
-            today = date.today()
-            seven_days_ago = today - timedelta(days=7)
-
-            await session.execute(
-                delete(TopChannel).where(func.date(TopChannel.created_at) < seven_days_ago)
-            )
-            await session.flush()
-            logger.info("Cleared old top channels data")
-
             for country_code in COUNTRIES:
                 logger.info(f"Fetching top channels for {country_code}...")
 
@@ -58,13 +49,10 @@ async def update_top_channels():
                     continue
 
                 await session.execute(
-                    delete(TopChannel).where(
-                        TopChannel.country_code == country_code,
-                        func.date(TopChannel.created_at) == today
-                    )
+                    delete(TopChannel).where(TopChannel.country_code == country_code)
                 )
                 await session.commit()
-                logger.info(f"Cleared existing data for {country_code}")
+                logger.info(f"Cleared all existing data for {country_code}")
 
                 for rank, channel in enumerate(channels, start=1):
                     top_channel = TopChannel(
@@ -85,7 +73,6 @@ async def update_top_channels():
 
                 logger.info(f"Saved {len(channels)} channels for {country_code}")
 
-            await session.commit()
             logger.info("Top channels update completed successfully!")
 
         except Exception as e:
@@ -95,7 +82,7 @@ async def update_top_channels():
 
 
 async def get_top_channels_from_db(session: AsyncSession) -> dict:
-    from sqlalchemy import select, func
+    from sqlalchemy import select
     from datetime import date
     from app.core.redis import cache_delete
 
@@ -110,11 +97,8 @@ async def get_top_channels_from_db(session: AsyncSession) -> dict:
             logger.info("Returning top channels from cache")
             return cached_data
 
-    today = date.today()
-
     result = await session.execute(
         select(TopChannel)
-        .where(func.date(TopChannel.created_at) == today)
         .order_by(TopChannel.country_code, TopChannel.rank)
     )
     channels = result.scalars().all()
@@ -143,13 +127,9 @@ async def get_top_channels_from_db(session: AsyncSession) -> dict:
 
 async def has_today_data(session: AsyncSession) -> bool:
     from sqlalchemy import select, func
-    from datetime import date
-
-    today = date.today()
 
     result = await session.execute(
         select(func.count(TopChannel.id))
-        .where(func.date(TopChannel.created_at) == today)
     )
     count = result.scalar()
     return count > 0
