@@ -63,7 +63,7 @@ async def update_top_channels():
                         func.date(TopChannel.created_at) == today
                     )
                 )
-                await session.flush()
+                await session.commit()
                 logger.info(f"Cleared existing data for {country_code}")
 
                 for rank, channel in enumerate(channels, start=1):
@@ -81,6 +81,7 @@ async def update_top_channels():
                         rank=rank
                     )
                     session.add(top_channel)
+                await session.commit()
 
                 logger.info(f"Saved {len(channels)} channels for {country_code}")
 
