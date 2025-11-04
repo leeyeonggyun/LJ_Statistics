@@ -4,8 +4,7 @@ from contextlib import asynccontextmanager
 from aiolimiter import AsyncLimiter
 from tenacity import retry, stop_after_attempt, wait_exponential
 
-# Simple global rate limiter (adjust as needed)
-limiter = AsyncLimiter(8, 1)  # 8 req/sec
+limiter = AsyncLimiter(8, 1)
 
 @asynccontextmanager
 async def backoff_client():
