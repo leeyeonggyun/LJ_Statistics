@@ -21,30 +21,11 @@ async def search_videos_recent_week(q: str, max_results: int = 25) -> Dict[str, 
         r.raise_for_status()
         return r.json()
 
-async def get_latest_upload_date(client: httpx.AsyncClient, uploads_playlist_id: str) -> Optional[str]:
-    try:
-        playlist_params = {
-            "part": "snippet",
-            "playlistId": uploads_playlist_id,
-            "maxResults": 1,
-            "key": settings.youtube_api_key,
-        }
-        playlist_response = await client.get(f"{BASE}/playlistItems", params=playlist_params, timeout=10)
-        playlist_response.raise_for_status()
-        playlist_data = playlist_response.json()
-
-        if playlist_data.get("items"):
-            return playlist_data["items"][0]["snippet"]["publishedAt"]
-    except Exception:
-        pass
-    return None
-
-
 async def search_channels(q: str, max_results: int = 150, page_token: str = None) -> Dict[str, Any]:
     async with backoff_client() as client:
         channel_video_count = {}
         channel_search_ids = set()
-        pages_to_fetch = 3
+        pages_to_fetch = 2
         next_page_token = page_token
 
         for page in range(pages_to_fetch):
@@ -78,7 +59,7 @@ async def search_channels(q: str, max_results: int = 150, page_token: str = None
 
         all_video_items = []
         next_page_token = None
-        pages_to_fetch = 6
+        pages_to_fetch = 3
 
         for page in range(pages_to_fetch):
             search_params = {
@@ -189,22 +170,8 @@ async def search_channels(q: str, max_results: int = 150, page_token: str = None
         if not selected_channels:
             return {"channels": [], "nextPageToken": None}
 
-        channels_with_playlists = []
-        for channel in selected_channels:
-            uploads_playlist_id = channel.get("contentDetails", {}).get("relatedPlaylists", {}).get("uploads")
-            channels_with_playlists.append((channel, uploads_playlist_id))
-
-        async def get_none():
-            return None
-
-        latest_upload_tasks = [
-            get_latest_upload_date(client, playlist_id) if playlist_id else get_none()
-            for _, playlist_id in channels_with_playlists
-        ]
-        latest_upload_dates = await asyncio.gather(*latest_upload_tasks)
-
         results = []
-        for (channel, _), latest_upload_date in zip(channels_with_playlists, latest_upload_dates):
+        for channel in selected_channels:
             subscriber_count = int(channel["statistics"].get("subscriberCount", 0))
             video_count = int(channel["statistics"].get("videoCount", 0))
             view_count = int(channel["statistics"].get("viewCount", 0))
@@ -227,7 +194,7 @@ async def search_channels(q: str, max_results: int = 150, page_token: str = None
                 "customUrl": channel["snippet"].get("customUrl", ""),
                 "country": channel["snippet"].get("country", ""),
                 "publishedAt": channel["snippet"].get("publishedAt", ""),
-                "latestUploadDate": latest_upload_date,
+                "latestUploadDate": None,
                 "topics": topics,
             })
 
