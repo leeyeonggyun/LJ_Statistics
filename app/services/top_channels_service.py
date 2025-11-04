@@ -26,13 +26,10 @@ async def update_top_channels():
             seven_days_ago = today - timedelta(days=7)
 
             await session.execute(
-                delete(TopChannel).where(func.date(TopChannel.created_at) == today)
-            )
-            await session.execute(
                 delete(TopChannel).where(func.date(TopChannel.created_at) < seven_days_ago)
             )
             await session.flush()
-            logger.info("Cleared today's and old top channels data")
+            logger.info("Cleared old top channels data")
 
             for country_code in COUNTRIES:
                 logger.info(f"Fetching top channels for {country_code}...")
@@ -59,6 +56,15 @@ async def update_top_channels():
                 if not channels:
                     logger.warning(f"No channels retrieved for {country_code}, skipping save")
                     continue
+
+                await session.execute(
+                    delete(TopChannel).where(
+                        TopChannel.country_code == country_code,
+                        func.date(TopChannel.created_at) == today
+                    )
+                )
+                await session.flush()
+                logger.info(f"Cleared existing data for {country_code}")
 
                 for rank, channel in enumerate(channels, start=1):
                     top_channel = TopChannel(
