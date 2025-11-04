@@ -70,26 +70,44 @@ async def search_channels_with_cache(
     page_token: str = None
 ) -> dict:
     if page_token:
-        result = await search_channels(q=query, max_results=max_results, page_token=page_token)
-        return {
-            "query": query,
-            "result_count": len(result["channels"]),
-            "channels": result["channels"],
-            "nextPageToken": result.get("nextPageToken")
-        }
+        try:
+            result = await search_channels(q=query, max_results=max_results, page_token=page_token)
+            return {
+                "query": query,
+                "result_count": len(result["channels"]),
+                "channels": result["channels"],
+                "nextPageToken": result.get("nextPageToken")
+            }
+        except Exception as e:
+            logger.error(f"Search API call failed: {e}")
+            return {
+                "query": query,
+                "result_count": 0,
+                "channels": [],
+                "error": "API 할당량 초과. 잠시 후 다시 시도해주세요."
+            }
 
     cached_result = await get_search_from_db(session, query, max_results)
     if cached_result:
         return cached_result
 
-    result = await search_channels(q=query, max_results=max_results, page_token=page_token)
-    channels = result["channels"]
+    try:
+        result = await search_channels(q=query, max_results=max_results, page_token=page_token)
+        channels = result["channels"]
 
-    await save_search_to_db(session, query, max_results, channels)
+        await save_search_to_db(session, query, max_results, channels)
 
-    return {
-        "query": query,
-        "result_count": len(channels),
-        "channels": channels,
-        "nextPageToken": result.get("nextPageToken")
-    }
+        return {
+            "query": query,
+            "result_count": len(channels),
+            "channels": channels,
+            "nextPageToken": result.get("nextPageToken")
+        }
+    except Exception as e:
+        logger.error(f"Search API call failed: {e}")
+        return {
+            "query": query,
+            "result_count": 0,
+            "channels": [],
+            "error": "API 할당량 초과. 잠시 후 다시 시도해주세요."
+        }

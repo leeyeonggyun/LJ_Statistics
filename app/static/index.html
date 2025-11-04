@@ -1138,7 +1138,10 @@
                 loadingOverlay.classList.remove('active');
                 searchButton.disabled = false;
 
-                if (data.channels && data.channels.length > 0) {
+                if (data.error) {
+                    searchError.style.display = 'block';
+                    searchError.textContent = data.error;
+                } else if (data.channels && data.channels.length > 0) {
                     allChannels = data.channels;
                     resultsInfo.style.display = 'flex';
                     resultsText.textContent = `"${data.query}"에 대한 ${data.result_count}개의 채널을 찾았습니다`;
@@ -1176,10 +1179,17 @@
                 loadingOverlay.classList.remove('active');
                 rankingsLoaded = true;
 
-                // Display rankings in list format for each country
                 const krChannels = data.KR || [];
                 const jpChannels = data.JP || [];
                 const usChannels = data.US || [];
+
+                const totalChannels = krChannels.length + jpChannels.length + usChannels.length;
+
+                if (totalChannels === 0) {
+                    rankingsError.style.display = 'block';
+                    rankingsError.textContent = 'YouTube API 할당량 초과. 잠시 후 다시 시도해주세요.';
+                    return;
+                }
 
                 document.getElementById('krTab').innerHTML = createRankingsTable(krChannels, 'KR');
                 document.getElementById('jpTab').innerHTML = createRankingsTable(jpChannels, 'JP');
