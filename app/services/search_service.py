@@ -66,7 +66,7 @@ async def save_search_to_db(
 async def search_channels_with_cache(
     session: AsyncSession,
     query: str,
-    max_results: int = 150,
+    max_results: int = 100,
     page_token: str = None
 ) -> dict:
     if page_token:

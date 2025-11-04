@@ -1127,7 +1127,7 @@
             searchButton.disabled = true;
 
             try {
-                const response = await fetch(`/api/search/channels?q=${encodeURIComponent(query)}&max_results=150`);
+                const response = await fetch(`/api/search/channels?q=${encodeURIComponent(query)}&max_results=100`);
 
                 if (!response.ok) {
                     throw new Error('채널을 가져오는데 실패했습니다');

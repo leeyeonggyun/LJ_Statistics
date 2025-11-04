@@ -20,7 +20,7 @@ async def search_summary(q: str = Query(..., min_length=1)):
 @router.get("/search/channels")
 async def search_channels_endpoint(
     q: str = Query(..., min_length=1, description="Search keyword"),
-    max_results: int = Query(default=150, ge=1, le=150, description="Maximum number of results"),
+    max_results: int = Query(default=100, ge=1, le=100, description="Maximum number of results"),
     page_token: str = Query(default=None, description="Page token for pagination"),
     db: AsyncSession = Depends(get_db)
 ) -> Dict[str, Any]:
