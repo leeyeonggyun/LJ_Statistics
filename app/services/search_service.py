@@ -2,15 +2,15 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, delete, func
 from datetime import date, timedelta
 from app.models.search_result import SearchResult
-from app.services.youtube_client import search_channels
+from app.services.youtube_client import get_trending_channels
 import logging
 
 logger = logging.getLogger(__name__)
 
 
-async def get_search_from_db(
+async def get_trending_from_db(
     session: AsyncSession,
-    query: str,
+    region_code: str,
     max_results: int
 ) -> dict | None:
     today = date.today()
@@ -18,7 +18,7 @@ async def get_search_from_db(
     result = await session.execute(
         select(SearchResult)
         .where(
-            SearchResult.search_query == query,
+            SearchResult.search_query == region_code,
             SearchResult.search_date == today,
             SearchResult.max_results == max_results
         )
@@ -26,32 +26,31 @@ async def get_search_from_db(
     search_result = result.scalar_one_or_none()
 
     if search_result:
-        logger.info(f"Found cached search result in DB for query: {query}")
+        logger.info(f"Found cached trending channels for region: {region_code}")
         return {
-            "query": query,
+            "regionCode": region_code,
             "result_count": search_result.result_count,
             "channels": search_result.channels_data,
-            "nextPageToken": None
         }
 
     return None
 
 
-async def save_search_to_db(
+async def save_trending_to_db(
     session: AsyncSession,
-    query: str,
+    region_code: str,
     max_results: int,
     channels: list
 ):
     today = date.today()
-    seven_days_ago = today - timedelta(days=7)
+    thirty_days_ago = today - timedelta(days=30)
 
     await session.execute(
-        delete(SearchResult).where(SearchResult.search_date < seven_days_ago)
+        delete(SearchResult).where(SearchResult.search_date < thirty_days_ago)
     )
 
     search_result = SearchResult(
-        search_query=query,
+        search_query=region_code,
         search_date=today,
         max_results=max_results,
         result_count=len(channels),
@@ -60,53 +59,33 @@ async def save_search_to_db(
     session.add(search_result)
     await session.commit()
 
-    logger.info(f"Saved search result to DB for query: {query}")
+    logger.info(f"Saved trending channels to DB for region: {region_code}")
 
 
-async def search_channels_with_cache(
+async def get_trending_channels_with_cache(
     session: AsyncSession,
-    query: str,
-    max_results: int = 100,
-    page_token: str = None
+    region_code: str = "KR",
+    max_results: int = 50,
 ) -> dict:
-    if page_token:
-        try:
-            result = await search_channels(q=query, max_results=max_results, page_token=page_token)
-            return {
-                "query": query,
-                "result_count": len(result["channels"]),
-                "channels": result["channels"],
-                "nextPageToken": result.get("nextPageToken")
-            }
-        except Exception as e:
-            logger.error(f"Search API call failed: {e}")
-            return {
-                "query": query,
-                "result_count": 0,
-                "channels": [],
-                "error": "API 할당량 초과. 잠시 후 다시 시도해주세요."
-            }
-
-    cached_result = await get_search_from_db(session, query, max_results)
+    cached_result = await get_trending_from_db(session, region_code, max_results)
     if cached_result:
         return cached_result
 
     try:
-        result = await search_channels(q=query, max_results=max_results, page_token=page_token)
+        result = await get_trending_channels(region_code=region_code, max_results=max_results)
         channels = result["channels"]
 
-        await save_search_to_db(session, query, max_results, channels)
+        await save_trending_to_db(session, region_code, max_results, channels)
 
         return {
-            "query": query,
+            "regionCode": region_code,
             "result_count": len(channels),
             "channels": channels,
-            "nextPageToken": result.get("nextPageToken")
         }
     except Exception as e:
-        logger.error(f"Search API call failed: {e}")
+        logger.error(f"Trending API call failed: {e}")
         return {
-            "query": query,
+            "regionCode": region_code,
             "result_count": 0,
             "channels": [],
             "error": "API 할당량 초과. 잠시 후 다시 시도해주세요."

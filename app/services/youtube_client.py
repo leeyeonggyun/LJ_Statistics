@@ -7,6 +7,26 @@ from app.core.settings import settings
 
 BASE = "https://www.googleapis.com/youtube/v3"
 
+async def get_i18n_regions() -> List[Dict[str, str]]:
+    async with backoff_client() as client:
+        params = {
+            "part": "snippet",
+            "key": settings.youtube_api_key,
+        }
+
+        response = await client.get(f"{BASE}/i18nRegions", params=params, timeout=20)
+        response.raise_for_status()
+        data = response.json()
+
+        regions = []
+        for item in data.get("items", []):
+            regions.append({
+                "code": item["snippet"]["gl"],
+                "name": item["snippet"]["name"]
+            })
+
+        return regions
+
 async def search_videos_recent_week(q: str, max_results: int = 25) -> Dict[str, Any]:
     params = {
         "q": q,
@@ -21,77 +41,31 @@ async def search_videos_recent_week(q: str, max_results: int = 25) -> Dict[str, 
         r.raise_for_status()
         return r.json()
 
-async def search_channels(q: str, max_results: int = 100, page_token: str = None) -> Dict[str, Any]:
+async def get_trending_channels(region_code: str = "KR", max_results: int = 50) -> Dict[str, Any]:
     async with backoff_client() as client:
-        channel_video_count = {}
-        channel_search_ids = set()
-
-        search_params = {
-            "q": q,
-            "part": "id,snippet",
-            "type": "channel",
+        videos_params = {
+            "part": "snippet",
+            "chart": "mostPopular",
+            "regionCode": region_code,
             "maxResults": 50,
             "key": settings.youtube_api_key,
         }
 
-        if page_token:
-            search_params["pageToken"] = page_token
+        videos_response = await client.get(f"{BASE}/videos", params=videos_params, timeout=20)
+        videos_response.raise_for_status()
+        videos_data = videos_response.json()
 
-        search_response = await client.get(f"{BASE}/search", params=search_params, timeout=20)
-        search_response.raise_for_status()
-        search_data = search_response.json()
+        items = videos_data.get("items", [])
+        if not items:
+            return {"channels": [], "regionCode": region_code}
 
-        items = search_data.get("items", [])
-        for item in items:
-            channel_id = item["id"]["channelId"]
-            channel_search_ids.add(channel_id)
-            channel_video_count[channel_id] = channel_video_count.get(channel_id, 0) + 5
-
-        all_video_items = []
-        next_page_token = None
-        pages_to_fetch = 2
-
-        for page in range(pages_to_fetch):
-            search_params = {
-                "q": q,
-                "part": "id,snippet",
-                "type": "video",
-                "maxResults": 50,
-                "key": settings.youtube_api_key,
-                "order": "viewCount",
-            }
-
-            if next_page_token:
-                search_params["pageToken"] = next_page_token
-
-            search_response = await client.get(f"{BASE}/search", params=search_params, timeout=20)
-            search_response.raise_for_status()
-            search_data = search_response.json()
-
-            items = search_data.get("items", [])
-            if not items:
-                break
-
-            all_video_items.extend(items)
-
-            next_page_token = search_data.get("nextPageToken")
-            if not next_page_token:
-                break
-
-        for item in all_video_items:
-            channel_id = item["snippet"]["channelId"]
-            channel_video_count[channel_id] = channel_video_count.get(channel_id, 0) + 1
-
-        all_candidate_ids = list(channel_video_count.keys())
-
-        if not all_candidate_ids:
-            return {"channels": [], "nextPageToken": None}
+        channel_ids = list(set([item["snippet"]["channelId"] for item in items]))
 
         all_channels = []
         batch_size = 50
 
-        for i in range(0, len(all_candidate_ids), batch_size):
-            batch_ids = all_candidate_ids[i:i + batch_size]
+        for i in range(0, len(channel_ids), batch_size):
+            batch_ids = channel_ids[i:i + batch_size]
             channels_params = {
                 "part": "snippet,statistics",
                 "id": ",".join(batch_ids),
@@ -103,38 +77,8 @@ async def search_channels(q: str, max_results: int = 100, page_token: str = None
             channels_data = channels_response.json()
             all_channels.extend(channels_data.get("items", []))
 
-        filtered_channels = []
-        for channel in all_channels:
-            channel_id = channel["id"]
-            total_videos = int(channel["statistics"].get("videoCount", 0))
-            related_videos = channel_video_count.get(channel_id, 0)
-
-            is_direct_match = channel_id in channel_search_ids
-
-            if is_direct_match:
-                filtered_channels.append((channel_id, related_videos + 10, channel))
-            elif total_videos == 0:
-                continue
-            elif total_videos < 1000:
-                if related_videos >= 2:
-                    filtered_channels.append((channel_id, related_videos, channel))
-            elif total_videos < 5000:
-                if related_videos >= 4:
-                    filtered_channels.append((channel_id, related_videos, channel))
-            else:
-                ratio = related_videos / total_videos
-                if related_videos >= 8 or (related_videos >= 4 and ratio >= 0.01):
-                    filtered_channels.append((channel_id, related_videos, channel))
-
-        filtered_channels.sort(key=lambda x: x[1], reverse=True)
-
-        selected_channels = [ch for _, _, ch in filtered_channels[:max_results]]
-
-        if not selected_channels:
-            return {"channels": [], "nextPageToken": None}
-
         results = []
-        for channel in selected_channels:
+        for channel in all_channels:
             subscriber_count = int(channel["statistics"].get("subscriberCount", 0))
             video_count = int(channel["statistics"].get("videoCount", 0))
             view_count = int(channel["statistics"].get("viewCount", 0))
@@ -150,15 +94,14 @@ async def search_channels(q: str, max_results: int = 100, page_token: str = None
                 "customUrl": channel["snippet"].get("customUrl", ""),
                 "country": channel["snippet"].get("country", ""),
                 "publishedAt": channel["snippet"].get("publishedAt", ""),
-                "latestUploadDate": None,
-                "topics": [],
             })
 
         results.sort(key=lambda x: x["subscriberCount"], reverse=True)
+        results = results[:max_results]
 
         return {
             "channels": results,
-            "nextPageToken": next_page_token
+            "regionCode": region_code
         }
 
 

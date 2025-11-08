@@ -16,12 +16,20 @@ CACHE_TTL = 86400
 
 async def update_top_channels():
     from sqlalchemy import func
-    from datetime import date, timedelta
+    from datetime import date, timedelta, datetime
 
     logger.info("Starting top channels update...")
 
     async with async_session_maker() as session:
         try:
+            thirty_days_ago = datetime.now() - timedelta(days=30)
+
+            await session.execute(
+                delete(TopChannel).where(TopChannel.created_at < thirty_days_ago)
+            )
+            await session.flush()
+            logger.info("Cleaned up data older than 30 days")
+
             for country_code in COUNTRIES:
                 logger.info(f"Fetching top channels for {country_code}...")
 

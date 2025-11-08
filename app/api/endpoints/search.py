@@ -1,27 +1,35 @@
 
 from fastapi import APIRouter, Query, Depends
-from app.services.youtube_client import search_videos_recent_week
-from app.services.search_service import search_channels_with_cache
+from app.services.search_service import get_trending_channels_with_cache
+from app.services.youtube_client import get_i18n_regions
 from app.core.database import get_db
+from app.core.redis import cache_get, cache_set
 from sqlalchemy.ext.asyncio import AsyncSession
-from typing import Dict, Any
+from typing import Dict, Any, List
 import logging
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api")
 
-@router.get("/search/summary")
-async def search_summary(q: str = Query(..., min_length=1)):
-    data = await search_videos_recent_week(q=q, max_results=25)
-    count = len(data.get("items", []))
-    return {"query": q, "result_count": count}
+@router.get("/regions")
+async def get_regions_endpoint() -> List[Dict[str, str]]:
+    cache_key = "youtube_regions"
+    cached_regions = await cache_get(cache_key)
 
-@router.get("/search/channels")
-async def search_channels_endpoint(
-    q: str = Query(..., min_length=1, description="Search keyword"),
-    max_results: int = Query(default=100, ge=1, le=100, description="Maximum number of results"),
-    page_token: str = Query(default=None, description="Page token for pagination"),
+    if cached_regions:
+        logger.info("Returning regions from cache")
+        return cached_regions
+
+    regions = await get_i18n_regions()
+    await cache_set(cache_key, regions, ttl=86400)
+
+    return regions
+
+@router.get("/trending/channels")
+async def get_trending_channels_endpoint(
+    region_code: str = Query(default="KR", description="Region code (KR, JP, US, etc)"),
+    max_results: int = Query(default=50, ge=1, le=50, description="Maximum number of results"),
     db: AsyncSession = Depends(get_db)
 ) -> Dict[str, Any]:
-    return await search_channels_with_cache(db, q, max_results, page_token)
+    return await get_trending_channels_with_cache(db, region_code, max_results)
