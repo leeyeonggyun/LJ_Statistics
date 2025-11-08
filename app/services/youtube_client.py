@@ -43,24 +43,42 @@ async def search_videos_recent_week(q: str, max_results: int = 25) -> Dict[str, 
 
 async def get_trending_channels(region_code: str = "KR", max_results: int = 50) -> Dict[str, Any]:
     async with backoff_client() as client:
-        videos_params = {
-            "part": "snippet",
-            "chart": "mostPopular",
-            "regionCode": region_code,
-            "maxResults": 50,
-            "key": settings.youtube_api_key,
-        }
+        all_channels_dict = {}
+        next_page_token = None
+        pages_to_fetch = 3
 
-        videos_response = await client.get(f"{BASE}/videos", params=videos_params, timeout=20)
-        videos_response.raise_for_status()
-        videos_data = videos_response.json()
+        for page in range(pages_to_fetch):
+            videos_params = {
+                "part": "snippet",
+                "chart": "mostPopular",
+                "regionCode": region_code,
+                "maxResults": 50,
+                "key": settings.youtube_api_key,
+            }
 
-        items = videos_data.get("items", [])
-        if not items:
+            if next_page_token:
+                videos_params["pageToken"] = next_page_token
+
+            videos_response = await client.get(f"{BASE}/videos", params=videos_params, timeout=20)
+            videos_response.raise_for_status()
+            videos_data = videos_response.json()
+
+            items = videos_data.get("items", [])
+            if not items:
+                break
+
+            for item in items:
+                channel_id = item["snippet"]["channelId"]
+                all_channels_dict[channel_id] = all_channels_dict.get(channel_id, 0) + 1
+
+            next_page_token = videos_data.get("nextPageToken")
+            if not next_page_token:
+                break
+
+        if not all_channels_dict:
             return {"channels": [], "regionCode": region_code}
 
-        channel_ids = list(set([item["snippet"]["channelId"] for item in items]))
-
+        channel_ids = list(all_channels_dict.keys())
         all_channels = []
         batch_size = 50
 
@@ -79,6 +97,11 @@ async def get_trending_channels(region_code: str = "KR", max_results: int = 50) 
 
         results = []
         for channel in all_channels:
+            channel_country = channel["snippet"].get("country", "")
+
+            if channel_country != region_code:
+                continue
+
             subscriber_count = int(channel["statistics"].get("subscriberCount", 0))
             video_count = int(channel["statistics"].get("videoCount", 0))
             view_count = int(channel["statistics"].get("viewCount", 0))
@@ -92,11 +115,12 @@ async def get_trending_channels(region_code: str = "KR", max_results: int = 50) 
                 "videoCount": video_count,
                 "viewCount": view_count,
                 "customUrl": channel["snippet"].get("customUrl", ""),
-                "country": channel["snippet"].get("country", ""),
+                "country": channel_country,
                 "publishedAt": channel["snippet"].get("publishedAt", ""),
+                "videoAppearances": all_channels_dict.get(channel["id"], 0)
             })
 
-        results.sort(key=lambda x: x["subscriberCount"], reverse=True)
+        results.sort(key=lambda x: (x["videoAppearances"], x["subscriberCount"]), reverse=True)
         results = results[:max_results]
 
         return {
